@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Chat - E2E Demo</title>
+  <script src="/static/crypto.js"></script>
+</head>
+<body>
+  <h1>Chat (user: {{ username }})</h1>
+  <div>
+    <label>To: <input id="recipient"></label>
+    <button id="init">Init key exchange</button>
+  </div>
+  <div id="keys">
+    <!-- show public keys / derived key hashes for demo -->
+  </div>
+  <div>
+    <textarea id="message" placeholder="Type message"></textarea><br>
+    <button id="send">Send Encrypted</button>
+  </div>
+  <div id="inbox">
+    <h3>Inbox</h3>
+    <ul id="messages"></ul>
+  </div>
+  <script>
+    const username = "{{ username }}";
+    // crypto.js will use username variable
+    window.onload = () => {
+      cryptoDemoInit(username);
+    };
+  </script>
+</body>
+</html>
