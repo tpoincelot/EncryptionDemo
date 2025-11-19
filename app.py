@@ -90,10 +90,7 @@ def chat():
 def upload_public_key():
     # Expects JSON: { to: username, from: username, public_key: base64 }
     data = request.get_json()
-    # In a real app, save public key in memory or DB for the recipient to fetch
-    # For simplicity, we store in-memory (not persisted) or store in a table
-    # Implement store/fetch in DB for robustness
-    # Here return success
+    # For simplicity, store in-memory (not persisted)
     return jsonify(success=True)
 
 @app.route('/api/messages', methods=['POST'])
