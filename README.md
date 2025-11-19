@@ -1,18 +1,30 @@
 ```markdown
 # E2E Messaging Demo (Flask + WebCrypto)
 
-Overview
-- Small web app to demonstrate Argon2 password hashing, ECDH Diffie-Hellman in the browser to derive AES keys, AES-256-CBC encryption with per-message IV, and HMAC-SHA256 (Encrypt-then-MAC).
+Short description
+- A small Flask app demonstrating Argon2 password hashing, browser-side ECDH (Diffie-Hellman), AES-256-CBC encryption with per-message IV, and HMAC-SHA256 (Encrypt-then-MAC) for client-side end-to-end encrypted messaging.
 
-Quick start (Ubuntu)
-1. Install Python 3.10+ and virtualenv.
-2. git clone <repo>
-3. python3 -m venv venv && . venv/bin/activate
-4. pip install -r requirements.txt
-5. export FLASK_APP=app.py; export FLASK_SECRET='replace-with-secure'
-6. python app.py
-7. Visit https://your-server:8000 or http://localhost:8000 (prefer HTTPS)
+Quick start (local)
+1. Create & activate venv:
+   python3 -m venv venv
+   . venv/bin/activate
 
-Notes on HTTPS
-- For production or public demos use nginx + certbot for Let's Encrypt (or use a self-signed cert for local testing - explain in report).
+2. Install:
+   pip install -r requirements.txt
+
+3. Set Flask secret and run:
+   export FLASK_APP=app.py
+   export FLASK_SECRET='replace-with-secure-value'
+   python app.py
+
+4. Open http://localhost:8000
+
+Project layout
+- app.py - Flask backend
+- templates/ - HTML templates (login.html, chat.html)
+- static/ - JS (crypto.js) and CSS
+- requirements.txt - Python dependencies
+
+License
+- MIT (or choose another)
 ```
