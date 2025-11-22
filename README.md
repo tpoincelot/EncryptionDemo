@@ -21,7 +21,7 @@ Quick start (local)
 
 Project layout
 - app.py - Flask backend
-- templates/ - HTML templates (login.html, chat.html)
+- templates/ - HTML templates (login.html, chat.html, register.html)
 - static/ - JS (crypto.js) and CSS
 - requirements.txt - Python dependencies
 
