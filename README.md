@@ -4,7 +4,7 @@
 Short description
 - A small Flask app demonstrating Argon2 password hashing, browser-side ECDH (Diffie-Hellman), AES-256-CBC encryption with per-message IV, and HMAC-SHA256 (Encrypt-then-MAC) for client-side end-to-end encrypted messaging.
 
-Quick start (local)
+Quick start (local use only)
 1. Create & activate venv:
    python3 -m venv venv
    . venv/bin/activate
@@ -26,5 +26,5 @@ Project layout
 - requirements.txt - Python dependencies
 
 License
-- MIT (or choose another)
+- MIT
 ```
