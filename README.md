@@ -4,8 +4,8 @@
 This project is a small Flask application that demonstrates the following cryptographic concepts:
 - **Argon2**: Secure password hashing.
 - **Diffie-Hellman (DH)**: Browser-side key exchange for establishing shared secrets.
-- **AES-256-CBC**: Symmetric encryption with per-message initialization vectors (IVs).
-- **HMAC-SHA256**: Message authentication for integrity (Encrypt-then-MAC).
+- **XOR-based encryption**: A simple symmetric encryption mechanism using XOR with a shared key and initialization vector (IV).
+- **Custom HMAC-like function**: A lightweight message authentication mechanism for integrity.
 
 ## Quick Start (Local Use Only)
 1. **Create and activate a virtual environment:**
@@ -38,6 +38,7 @@ This project is a small Flask application that demonstrates the following crypto
 ## Recent Changes
 - Removed unused `crypto_basic.js` file to streamline the project.
 - Updated `debug.html` to remove unnecessary notes and ensure clarity.
+- Replaced references to AES-256-CBC and HMAC-SHA256 with XOR-based encryption and a custom HMAC-like function.
 - Cleaned up comments in the codebase to remove references to AI tools or debugging artifacts.
 
 ## License
