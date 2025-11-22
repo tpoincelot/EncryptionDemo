@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Debug Dashboard</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main class="page">
+    <section class="card">
+      <h1>Database Debug View</h1>
+      <h2>Users</h2>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Username</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in users %}
+            <tr>
+              <td>{{ user['id'] }}</td>
+              <td>{{ user['username'] }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Messages</h2>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Sender</th>
+              <th>Recipient</th>
+              <th>Ciphertext</th>
+              <th>IV</th>
+              <th>HMAC</th>
+              <th>Timestamp</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for message in messages %}
+            <tr>
+              <td>{{ message['id'] }}</td>
+              <td>{{ message['sender'] }}</td>
+              <td>{{ message['recipient'] }}</td>
+              <td>{{ message['ciphertext'] }}</td>
+              <td>{{ message['iv'] }}</td>
+              <td>{{ message['hmac'] }}</td>
+              <td>{{ message['timestamp'] }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Key Activity Timeline</h2>
+      <p class="debug-note"><strong>Notes:</strong> Each entry is logged by the user shown under "Initiator"; the "Role" column explains whether they acted as initiator, responder, or sender. Only that user ever records their private exponent (a or b); peers reconstruct the shared key locally.</p>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Initiator</th>
+              <th>Recipient</th>
+              <th>Role</th>
+              <th>Algorithm</th>
+              <th>Details</th>
+              <th>Timestamp</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for log in key_logs %}
+            {% set params = log.get('params', {}) %}
+            <tr>
+              <td>{{ log['id'] }}</td>
+              <td>{{ log['initiator'] }}</td>
+              <td>{{ log['recipient'] }}</td>
+              <td>{{ log['role'] or 'n/a' }}</td>
+              <td>{{ log['algorithm'] }}</td>
+              <td>
+                {% if 'Diffie-Hellman' in log['algorithm'] %}
+                  g: {{ params.get('g', '—') }}<br>
+                  p: {{ params.get('p', '—') }}<br>
+                  A: {{ params.get('A', '—') }}<br>
+                  B: {{ params.get('B', '—') }}<br>
+                  {% if log['role'] == 'initiator' and params.get('a') %}
+                    ⮕ private exponent a: {{ params.get('a') }}<br>
+                  {% elif log['role'] == 'responder' and params.get('b') %}
+                    ⮕ private exponent b: {{ params.get('b') }}<br>
+                  {% endif %}
+                {% elif 'XOR-AES' in log['algorithm'] %}
+                  iv: {{ params.get('iv', '—') }}<br>
+                  hmac: {{ params.get('hmac', '—') }}<br>
+                  ciphertext preview: {{ params.get('ciphertext_preview', '—') }}
+                {% else %}
+                  {{ params }}
+                {% endif %}
+              </td>
+              <td>{{ log['timestamp'] }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,18 +1,28 @@
-```html
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login — E2E Messaging Demo</title>
+  <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-  <h1>Login</h1>
-  <form method="post" action="/login">
-    <label>Username: <input name="username" required></label><br>
-    <label>Password: <input name="password" type="password" required></label><br>
-    <button type="submit">Login</button>
-  </form>
-  <p>Or <a href="/register">register</a>.</p>
+  <main class="page">
+    <section class="card" style="max-width:420px;margin:auto;">
+      <h1>Login</h1>
+      <form method="post" action="/login" class="form-grid">
+        <div>
+          <label for="username">Username</label>
+          <input id="username" name="username" required autocomplete="username">
+        </div>
+        <div>
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" required autocomplete="current-password">
+        </div>
+        <button type="submit">Sign in</button>
+      </form>
+      <p class="notice">Or <a class="link-muted" href="/register">register</a> for an account.</p>
+    </section>
+  </main>
 </body>
 </html>
-```

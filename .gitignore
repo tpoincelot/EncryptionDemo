@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+.pytest_cache/
 env/
 venv/
 .venv/
@@ -22,3 +23,4 @@ data.db
 .env
 instance/
 *.pem
+handshake_debug.log

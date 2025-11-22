@@ -1,30 +1,44 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Chat - E2E Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chat — E2E Messaging Demo</title>
+  <link rel="stylesheet" href="/static/styles.css">
   <script src="/static/crypto.js"></script>
 </head>
 <body>
-  <h1>Chat (user: {{ username }})</h1>
-  <div>
-    <label>To: <input id="recipient"></label>
-    <button id="init">Init key exchange</button>
-  </div>
-  <div id="keys">
-    <!-- show public keys / derived key hashes for demo -->
-  </div>
-  <div>
-    <textarea id="message" placeholder="Type message"></textarea><br>
-    <button id="send">Send Encrypted</button>
-  </div>
-  <div id="inbox">
-    <h3>Inbox</h3>
-    <ul id="messages"></ul>
-  </div>
+  <main class="page">
+    <section class="card" style="padding:1.25rem 1.5rem;">
+      <h1>Chat (user: {{ username }})</h1>
+      <div class="chat-grid">
+        <div class="chat-panel">
+          <div class="form-grid">
+            <div>
+              <label for="recipient">Recipient</label>
+              <input id="recipient" placeholder="Enter username">
+            </div>
+            <div style="display:flex;gap:0.5rem;align-items:flex-end;">
+              <button id="init" type="button">Init key exchange</button>
+              <button id="reset" type="button">Reset shared key</button>
+            </div>
+          </div>
+          <div id="keys" class="notice"></div>
+          <div class="form-grid">
+            <label for="message">Message</label>
+            <textarea id="message" placeholder="Type message"></textarea>
+            <button id="send" type="button">Send encrypted</button>
+          </div>
+        </div>
+        <div class="info-panel">
+          <h2>Inbox</h2>
+          <ul id="messages"></ul>
+        </div>
+      </div>
+    </section>
+  </main>
   <script>
     const username = "{{ username }}";
-    // crypto.js will use username variable
     window.onload = () => {
       cryptoDemoInit(username);
     };
