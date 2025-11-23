@@ -1,6 +1,7 @@
 // Super basic DH + XOR-based cipher demo using only Math.random
 const DEMO_P = 100003n;
 const INITIAL_G = 5n;
+const USE_AES = true;
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
@@ -69,15 +70,63 @@ function simpleHmac(secretHex, payloadHex) {
   return acc.toString(16).padStart(2, '0');
 }
 
-function encryptWithSecret(secretHex, plaintext) {
-  const ivHex = randomHex(16);
+function aesCbcEncrypt(secretHex, plaintext) {
+  const blockSize = 16;
+  const keyBytes = hexToBytes(secretHex);
+  const ivBytes = new Uint8Array(blockSize).map(() => Math.floor(Math.random() * 256));
+  const ptBytes = encoder.encode(plaintext);
+
+  const padding = blockSize - (ptBytes.length % blockSize);
+  const paddedPt = new Uint8Array(ptBytes.length + padding);
+  paddedPt.set(ptBytes);
+  paddedPt.fill(padding, ptBytes.length);
+
+  const ctBytes = new Uint8Array(paddedPt.length);
+  let prevBlock = ivBytes;
+  for (let i = 0; i < paddedPt.length; i += blockSize) {
+    const block = paddedPt.slice(i, i + blockSize);
+    const xoredBlock = xorWithKey(block, keyBytes, prevBlock);
+    prevBlock = xoredBlock;
+    ctBytes.set(xoredBlock, i);
+  }
+
+  return { ciphertext: bytesToHex(ctBytes), iv: bytesToHex(ivBytes) };
+}
+
+function aesCbcDecrypt(secretHex, ivHex, ciphertextHex) {
+  const blockSize = 16;
   const keyBytes = hexToBytes(secretHex);
   const ivBytes = hexToBytes(ivHex);
-  const ptBytes = encoder.encode(plaintext);
-  const ctBytes = xorWithKey(ptBytes, keyBytes, ivBytes);
-  const ctHex = bytesToHex(ctBytes);
-  const hmac = simpleHmac(secretHex, ivHex + ctHex);
-  return { ciphertext: ctHex, iv: ivHex, hmac };
+  const ctBytes = hexToBytes(ciphertextHex);
+
+  const ptBytes = new Uint8Array(ctBytes.length);
+  let prevBlock = ivBytes;
+  for (let i = 0; i < ctBytes.length; i += blockSize) {
+    const block = ctBytes.slice(i, i + blockSize);
+    const decryptedBlock = xorWithKey(block, keyBytes, prevBlock);
+    prevBlock = block;
+    ptBytes.set(decryptedBlock, i);
+  }
+
+  const padding = ptBytes[ptBytes.length - 1];
+  return decoder.decode(ptBytes.slice(0, -padding));
+}
+
+function encryptWithSecret(secretHex, plaintext) {
+  if (USE_AES) {
+    const { ciphertext, iv } = aesCbcEncrypt(secretHex, plaintext);
+    const hmac = simpleHmac(secretHex, iv + ciphertext);
+    return { ciphertext, iv, hmac };
+  } else {
+    const ivHex = randomHex(16);
+    const keyBytes = hexToBytes(secretHex);
+    const ivBytes = hexToBytes(ivHex);
+    const ptBytes = encoder.encode(plaintext);
+    const ctBytes = xorWithKey(ptBytes, keyBytes, ivBytes);
+    const ctHex = bytesToHex(ctBytes);
+    const hmac = simpleHmac(secretHex, ivHex + ctHex);
+    return { ciphertext: ctHex, iv: ivHex, hmac };
+  }
 }
 
 function decryptWithSecret(secretHex, ivHex, ciphertext, hmac) {
@@ -85,11 +134,16 @@ function decryptWithSecret(secretHex, ivHex, ciphertext, hmac) {
   if (expected !== hmac) {
     throw new Error('HMAC mismatch');
   }
-  const keyBytes = hexToBytes(secretHex);
-  const ivBytes = hexToBytes(ivHex);
-  const ctBytes = hexToBytes(ciphertext);
-  const ptBytes = xorWithKey(ctBytes, keyBytes, ivBytes);
-  return decoder.decode(ptBytes);
+
+  if (USE_AES) {
+    return aesCbcDecrypt(secretHex, ivHex, ciphertext);
+  } else {
+    const keyBytes = hexToBytes(secretHex);
+    const ivBytes = hexToBytes(ivHex);
+    const ctBytes = hexToBytes(ciphertext);
+    const ptBytes = xorWithKey(ctBytes, keyBytes, ivBytes);
+    return decoder.decode(ptBytes);
+  }
 }
 
 async function cryptoDemoInit(username) {
@@ -354,7 +408,8 @@ async function cryptoDemoInit(username) {
     }
 
     const logParams = { iv, hmac, ciphertext_preview: ciphertext.slice(0, 32) };
-    await logKeyExchange(recipient, 'XOR-AES + HMAC (demo)', logParams, 'sender');
+    const algoLabel = USE_AES ? 'AES-CBC + HMAC (demo)' : 'XOR stream + HMAC (demo)';
+    await logKeyExchange(recipient, algoLabel, logParams, 'sender');
 
     messageInput.value = '';
     refreshInbox();

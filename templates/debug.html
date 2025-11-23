@@ -99,7 +99,8 @@
                   {% elif log['role'] == 'responder' and params.get('b') %}
                     ⮕ private exponent b: {{ params.get('b') }}<br>
                   {% endif %}
-                {% elif 'XOR-AES' in log['algorithm'] %}
+                {% elif 'AES-CBC' in log['algorithm'] or 'XOR' in log['algorithm'] %}
+                  mode: {{ 'AES-CBC' if 'AES-CBC' in log['algorithm'] else 'XOR stream' }}<br>
                   iv: {{ params.get('iv', '—') }}<br>
                   hmac: {{ params.get('hmac', '—') }}<br>
                   ciphertext preview: {{ params.get('ciphertext_preview', '—') }}

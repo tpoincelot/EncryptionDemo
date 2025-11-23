@@ -38,7 +38,7 @@ This project is a small Flask application that demonstrates the following crypto
 ## Recent Changes
 - Removed unused `crypto_basic.js` file to streamline the project.
 - Updated `debug.html` to remove unnecessary notes and ensure clarity.
-- Replaced references to AES-256-CBC and HMAC-SHA256 with XOR-based encryption and a custom HMAC-like function.
+- Implemented a simple AES-CBC-style block cipher and custom HMAC-like function; the active mode (AES-CBC vs XOR stream) is controlled by a `USE_AES` flag in `static/crypto.js`.
 - Cleaned up comments in the codebase to remove references to AI tools or debugging artifacts.
 
 ## License
