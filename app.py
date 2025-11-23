@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, session, jsonify
 import sqlite3
-from argon2 import PasswordHasher
+import hashlib
 import os
 import secrets
 import json
@@ -21,8 +21,14 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 DB_PATH = 'data.db'
-ph = PasswordHasher()
 PRIME_OPTIONS = [100003, 100019, 100043, 100049, 100057, 100069, 100103]
+
+def hash_password(password: str) -> str:
+    """Very simple SHA-256 hash for demo purposes only (NOT for real security)."""
+    return hashlib.sha256(password.encode('utf-8')).hexdigest()
+
+def verify_password(stored_hash: str, password: str) -> bool:
+    return stored_hash == hash_password(password)
 
 def pick_random_prime():
     return str(random.choice(PRIME_OPTIONS))
@@ -111,7 +117,7 @@ def register():
         username = request.form['username']
         password = request.form['password']
         try:
-            pw_hash = ph.hash(password)
+            pw_hash = hash_password(password)
             conn = get_db()
             conn.execute('INSERT INTO users (username, password_hash) VALUES (?, ?)', (username, pw_hash))
             conn.commit()
@@ -133,7 +139,8 @@ def login():
         conn.close()
         if not user:
             return "Invalid credentials", 403
-        ph.verify(user['password_hash'], password)
+        if not verify_password(user['password_hash'], password):
+            return "Invalid credentials", 403
         session['username'] = username
         return redirect('/chat')
     except Exception as e:

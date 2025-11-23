@@ -2,7 +2,7 @@
 
 ## Overview
 This project is a small Flask application that demonstrates the following cryptographic concepts:
-- **Argon2**: Secure password hashing.
+- **SHA-256**: Simple password hashing (demo-only, not production-grade security).
 - **Diffie-Hellman (DH)**: Browser-side key exchange for establishing shared secrets.
 - **XOR-based encryption**: A simple symmetric encryption mechanism using XOR with a shared key and initialization vector (IV).
 - **Custom HMAC-like function**: A lightweight message authentication mechanism for integrity.
