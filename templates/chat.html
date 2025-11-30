@@ -6,11 +6,12 @@
   <title>Chat — E2E Messaging Demo</title>
   <link rel="stylesheet" href="/static/styles.css">
   <script src="/static/crypto.js"></script>
+  <script src="/static/webcrypto.js"></script>
 </head>
 <body>
   <main class="page">
     <section class="card" style="padding:1.25rem 1.5rem;">
-      <h1>Chat (user: {{ username }})</h1>
+      <h1>Chat (user: {{ username }}) <small style="font-size: 0.5em;"><a href="#" id="switch-impl">Switch Implementation</a></small></h1>
       <div class="chat-grid">
         <div class="chat-panel">
           <div class="form-grid">
@@ -39,8 +40,21 @@
   </main>
   <script>
     const username = "{{ username }}";
+    const urlParams = new URLSearchParams(window.location.search);
+    const impl = urlParams.get('impl');
+    const switchLink = document.getElementById('switch-impl');
+
     window.onload = () => {
-      cryptoDemoInit(username);
+      if (impl === 'webcrypto') {
+        switchLink.textContent = 'Switch to Legacy Crypto';
+        switchLink.href = '?impl=legacy';
+        document.title += ' (Web Crypto)';
+        webCryptoDemoInit(username);
+      } else {
+        switchLink.textContent = 'Switch to Web Crypto';
+        switchLink.href = '?impl=webcrypto';
+        cryptoDemoInit(username);
+      }
     };
   </script>
 </body>

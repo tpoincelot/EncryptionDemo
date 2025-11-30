@@ -1,22 +1,7 @@
+
 (function() {
-// Super basic DH + XOR-based cipher demo using only Math.random
-const DEMO_P = 100003n;
-const INITIAL_G = 5n;
-const USE_AES = true;
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
-
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-function randomHex(length) {
-  let out = '';
-  while (out.length < length) {
-    out += Math.floor(Math.random() * 16).toString(16);
-  }
-  return out.slice(0, length);
-}
 
 function hexToBytes(hex) {
   const bytes = new Uint8Array(Math.ceil(hex.length / 2));
@@ -30,6 +15,10 @@ function hexToBytes(hex) {
 function bytesToHex(bytes) {
   return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
 }
+
+// DH Helpers
+const DEMO_P = 100003n;
+const INITIAL_G = 5n;
 
 function modPow(base, exp, mod) {
   let result = 1n;
@@ -50,104 +39,97 @@ function randomBigInt(max) {
   return BigInt(raw);
 }
 
-function xorWithKey(source, keyBytes, ivBytes) {
-  const out = new Uint8Array(source.length);
-  for (let i = 0; i < source.length; i++) {
-    const keyByte = keyBytes[i % keyBytes.length] || 0;
-    const ivByte = ivBytes[i % ivBytes.length] || 0;
-    out[i] = source[i] ^ keyByte ^ ivByte;
-  }
-  return out;
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function simpleHmac(secretHex, payloadHex) {
+// Web Crypto Implementation
+
+async function deriveKeys(secretHex) {
   const secretBytes = hexToBytes(secretHex);
-  const payloadBytes = hexToBytes(payloadHex);
-  let acc = 0;
-  for (let i = 0; i < payloadBytes.length; i++) {
-    const keyByte = secretBytes[i % secretBytes.length] || 0;
-    acc = (acc + ((payloadBytes[i] ^ keyByte) * 31)) & 0xff;
-  }
-  return acc.toString(16).padStart(2, '0');
+  const hashBuffer = await crypto.subtle.digest('SHA-256', secretBytes);
+  const hashArray = new Uint8Array(hashBuffer);
+  
+  // Split 32 bytes into two 16-byte keys
+  const encKeyBytes = hashArray.slice(0, 16);
+  const authKeyBytes = hashArray.slice(16, 32);
+
+  const encKey = await crypto.subtle.importKey(
+    'raw', encKeyBytes, { name: 'AES-CBC' }, false, ['encrypt', 'decrypt']
+  );
+
+  const authKey = await crypto.subtle.importKey(
+    'raw', authKeyBytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']
+  );
+
+  return { encKey, authKey };
 }
 
-function aesCbcEncrypt(secretHex, plaintext) {
-  const blockSize = 16;
-  const keyBytes = hexToBytes(secretHex);
-  const ivBytes = new Uint8Array(blockSize).map(() => Math.floor(Math.random() * 256));
+async function encryptWithSecret(secretHex, plaintext) {
+  const { encKey, authKey } = await deriveKeys(secretHex);
+  const iv = crypto.getRandomValues(new Uint8Array(16));
   const ptBytes = encoder.encode(plaintext);
 
-  const padding = blockSize - (ptBytes.length % blockSize);
-  const paddedPt = new Uint8Array(ptBytes.length + padding);
-  paddedPt.set(ptBytes);
-  paddedPt.fill(padding, ptBytes.length);
+  const ctBuffer = await crypto.subtle.encrypt(
+    { name: 'AES-CBC', iv },
+    encKey,
+    ptBytes
+  );
+  const ctBytes = new Uint8Array(ctBuffer);
 
-  const ctBytes = new Uint8Array(paddedPt.length);
-  let prevBlock = ivBytes;
-  for (let i = 0; i < paddedPt.length; i += blockSize) {
-    const block = paddedPt.slice(i, i + blockSize);
-    const xoredBlock = xorWithKey(block, keyBytes, prevBlock);
-    prevBlock = xoredBlock;
-    ctBytes.set(xoredBlock, i);
-  }
+  // HMAC over IV + Ciphertext
+  const dataToSign = new Uint8Array(iv.length + ctBytes.length);
+  dataToSign.set(iv);
+  dataToSign.set(ctBytes, iv.length);
 
-  return { ciphertext: bytesToHex(ctBytes), iv: bytesToHex(ivBytes) };
+  const sigBuffer = await crypto.subtle.sign(
+    'HMAC',
+    authKey,
+    dataToSign
+  );
+  const sigBytes = new Uint8Array(sigBuffer);
+
+  return {
+    ciphertext: bytesToHex(ctBytes),
+    iv: bytesToHex(iv),
+    hmac: bytesToHex(sigBytes)
+  };
 }
 
-function aesCbcDecrypt(secretHex, ivHex, ciphertextHex) {
-  const blockSize = 16;
-  const keyBytes = hexToBytes(secretHex);
-  const ivBytes = hexToBytes(ivHex);
+async function decryptWithSecret(secretHex, ivHex, ciphertextHex, hmacHex) {
+  const { encKey, authKey } = await deriveKeys(secretHex);
+  const iv = hexToBytes(ivHex);
   const ctBytes = hexToBytes(ciphertextHex);
+  const hmacBytes = hexToBytes(hmacHex);
 
-  const ptBytes = new Uint8Array(ctBytes.length);
-  let prevBlock = ivBytes;
-  for (let i = 0; i < ctBytes.length; i += blockSize) {
-    const block = ctBytes.slice(i, i + blockSize);
-    const decryptedBlock = xorWithKey(block, keyBytes, prevBlock);
-    prevBlock = block;
-    ptBytes.set(decryptedBlock, i);
-  }
+  // Verify HMAC
+  const dataToVerify = new Uint8Array(iv.length + ctBytes.length);
+  dataToVerify.set(iv);
+  dataToVerify.set(ctBytes, iv.length);
 
-  const padding = ptBytes[ptBytes.length - 1];
-  return decoder.decode(ptBytes.slice(0, -padding));
-}
+  const isValid = await crypto.subtle.verify(
+    'HMAC',
+    authKey,
+    hmacBytes,
+    dataToVerify
+  );
 
-function encryptWithSecret(secretHex, plaintext) {
-  if (USE_AES) {
-    const { ciphertext, iv } = aesCbcEncrypt(secretHex, plaintext);
-    const hmac = simpleHmac(secretHex, iv + ciphertext);
-    return { ciphertext, iv, hmac };
-  } else {
-    const ivHex = randomHex(16);
-    const keyBytes = hexToBytes(secretHex);
-    const ivBytes = hexToBytes(ivHex);
-    const ptBytes = encoder.encode(plaintext);
-    const ctBytes = xorWithKey(ptBytes, keyBytes, ivBytes);
-    const ctHex = bytesToHex(ctBytes);
-    const hmac = simpleHmac(secretHex, ivHex + ctHex);
-    return { ciphertext: ctHex, iv: ivHex, hmac };
-  }
-}
-
-function decryptWithSecret(secretHex, ivHex, ciphertext, hmac) {
-  const expected = simpleHmac(secretHex, ivHex + ciphertext);
-  if (expected !== hmac) {
+  if (!isValid) {
     throw new Error('HMAC mismatch');
   }
 
-  if (USE_AES) {
-    return aesCbcDecrypt(secretHex, ivHex, ciphertext);
-  } else {
-    const keyBytes = hexToBytes(secretHex);
-    const ivBytes = hexToBytes(ivHex);
-    const ctBytes = hexToBytes(ciphertext);
-    const ptBytes = xorWithKey(ctBytes, keyBytes, ivBytes);
-    return decoder.decode(ptBytes);
-  }
+  // Decrypt
+  const ptBuffer = await crypto.subtle.decrypt(
+    { name: 'AES-CBC', iv },
+    encKey,
+    ctBytes
+  );
+
+  return decoder.decode(ptBuffer);
 }
 
-async function cryptoDemoInit(username) {
+// Main Init Function (Async-aware)
+async function webCryptoDemoInit(username) {
   const recipientInput = document.getElementById('recipient');
   const initBtn = document.getElementById('init');
   const resetBtn = document.getElementById('reset');
@@ -394,7 +376,8 @@ async function cryptoDemoInit(username) {
       }
     }
 
-    const { ciphertext, iv, hmac } = encryptWithSecret(shared.secretHex, plaintext);
+    // await encryptWithSecret
+    const { ciphertext, iv, hmac } = await encryptWithSecret(shared.secretHex, plaintext);
     const payload = { sender: username, recipient, ciphertext, iv, hmac };
 
     const resp = await fetch('/api/messages', {
@@ -409,7 +392,7 @@ async function cryptoDemoInit(username) {
     }
 
     const logParams = { iv, hmac, ciphertext_preview: ciphertext.slice(0, 32) };
-    const algoLabel = USE_AES ? 'AES-CBC + HMAC (demo)' : 'XOR stream + HMAC (demo)';
+    const algoLabel = 'WebCrypto AES-CBC + HMAC';
     await logKeyExchange(recipient, algoLabel, logParams, 'sender');
 
     messageInput.value = '';
@@ -435,9 +418,11 @@ async function cryptoDemoInit(username) {
           }
         }
         try {
-          const plain = decryptWithSecret(shared.secretHex, msg.iv, msg.ciphertext, msg.hmac);
+          // await decryptWithSecret
+          const plain = await decryptWithSecret(shared.secretHex, msg.iv, msg.ciphertext, msg.hmac);
           li.textContent = `${msg.sender}: ${plain}`;
         } catch (err) {
+          console.error(err);
           li.textContent = `${msg.sender}: [decryption failed]`;
         }
         inboxList.appendChild(li);
@@ -456,5 +441,5 @@ async function cryptoDemoInit(username) {
   setInterval(refreshInbox, 3000);
 }
 
-window.cryptoDemoInit = cryptoDemoInit;
+window.webCryptoDemoInit = webCryptoDemoInit;
 })();
