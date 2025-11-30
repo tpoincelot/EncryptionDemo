@@ -1,3 +1,4 @@
+(function() {
 // Super basic DH + XOR-based cipher demo using only Math.random
 const DEMO_P = 100003n;
 const INITIAL_G = 5n;
@@ -17,6 +18,7 @@ function randomHex(length) {
   return out.slice(0, length);
 }
 
+// Helper function to convert hex string to byte array
 function hexToBytes(hex) {
   const bytes = new Uint8Array(Math.ceil(hex.length / 2));
   for (let i = 0; i < bytes.length; i++) {
@@ -26,10 +28,12 @@ function hexToBytes(hex) {
   return bytes;
 }
 
+// Helper function to convert byte array to hex string
 function bytesToHex(bytes) {
   return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+// Modular exponentiation for Diffie-Hellman
 function modPow(base, exp, mod) {
   let result = 1n;
   base = base % mod;
@@ -49,6 +53,7 @@ function randomBigInt(max) {
   return BigInt(raw);
 }
 
+// Simple XOR encryption with key and IV
 function xorWithKey(source, keyBytes, ivBytes) {
   const out = new Uint8Array(source.length);
   for (let i = 0; i < source.length; i++) {
@@ -70,6 +75,7 @@ function simpleHmac(secretHex, payloadHex) {
   return acc.toString(16).padStart(2, '0');
 }
 
+// Manual implementation of AES-CBC encryption
 function aesCbcEncrypt(secretHex, plaintext) {
   const blockSize = 16;
   const keyBytes = hexToBytes(secretHex);
@@ -93,6 +99,7 @@ function aesCbcEncrypt(secretHex, plaintext) {
   return { ciphertext: bytesToHex(ctBytes), iv: bytesToHex(ivBytes) };
 }
 
+// Manual implementation of AES-CBC decryption
 function aesCbcDecrypt(secretHex, ivHex, ciphertextHex) {
   const blockSize = 16;
   const keyBytes = hexToBytes(secretHex);
@@ -146,6 +153,7 @@ function decryptWithSecret(secretHex, ivHex, ciphertext, hmac) {
   }
 }
 
+// Initialize the chat application
 async function cryptoDemoInit(username) {
   const recipientInput = document.getElementById('recipient');
   const initBtn = document.getElementById('init');
@@ -295,6 +303,7 @@ async function cryptoDemoInit(username) {
     throw new Error('Timed out waiting for peer key to update');
   }
 
+  // Establish a shared secret with a peer
   async function establishSharedSecret(peer, role = 'initiator') {
     if (state.sharedSecrets[peer]) {
       return state.sharedSecrets[peer];
@@ -377,6 +386,7 @@ async function cryptoDemoInit(username) {
     }
   }
 
+  // Send an encrypted message
   async function sendMessage() {
     const recipient = recipientInput.value.trim();
     const plaintext = messageInput.value.trim();
@@ -415,6 +425,7 @@ async function cryptoDemoInit(username) {
     refreshInbox();
   }
 
+  // Fetch and display messages
   async function refreshInbox() {
     try {
       const resp = await fetch('/api/messages/' + encodeURIComponent(username));

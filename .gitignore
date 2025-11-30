@@ -24,3 +24,4 @@ data.db
 instance/
 *.pem
 handshake_debug.log
+script.txt

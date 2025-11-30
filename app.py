@@ -1,3 +1,4 @@
+# Import necessary libraries
 from flask import Flask, render_template, request, redirect, session, jsonify
 import sqlite3
 import hashlib
@@ -8,6 +9,7 @@ import random
 import logging
 import pathlib
 
+# Setup Flask app and database path
 app = Flask(__name__, static_folder='static', template_folder='templates')
 app.secret_key = os.environ.get('FLASK_SECRET', secrets.token_hex(16))
 
@@ -47,6 +49,7 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
+# Initialize database tables if they don't exist
 def init_db():
     conn = get_db()
     c = conn.cursor()
@@ -105,12 +108,14 @@ def init_db():
     conn.commit()
     conn.close()
 
+# Route for the home page
 @app.route('/')
 def index():
     if 'username' in session:
         return redirect('/chat')
     return render_template('login.html')
 
+# Route for user registration
 @app.route('/register', methods=['GET','POST'])
 def register():
     if request.method == 'POST':
@@ -129,6 +134,7 @@ def register():
         return redirect('/')
     return render_template('register.html')
 
+# Route for user login
 @app.route('/login', methods=['POST'])
 def login():
     username = request.form['username']
@@ -151,6 +157,7 @@ def logout():
     session.clear()
     return redirect('/')
 
+# Route for the chat interface
 @app.route('/chat')
 def chat():
     if 'username' not in session:
@@ -158,6 +165,7 @@ def chat():
     return render_template('chat.html', username=session['username'])
 
 # API endpoints for exchanging public keys and messages
+# API to upload public key
 @app.route('/api/public_key', methods=['POST'])
 def upload_public_key():
     try:
@@ -194,6 +202,7 @@ def get_public_key(username):
     except Exception as e:
         return jsonify(success=False, error=str(e)), 500
 
+# API to create a new Diffie-Hellman session
 @app.route('/api/dh_sessions', methods=['POST'])
 def create_dh_session():
     try:
@@ -258,6 +267,7 @@ def complete_dh_session(session_id):
     except Exception as e:
         return jsonify(success=False, error=str(e)), 500
 
+# API to post an encrypted message
 @app.route('/api/messages', methods=['POST'])
 def post_message():
     try:
@@ -311,6 +321,7 @@ def reset_session():
     except Exception as e:
         return jsonify(success=False, error=str(e)), 500
 
+# API to get messages for a user
 @app.route('/api/messages/<username>', methods=['GET'])
 def get_messages(username):
     try:

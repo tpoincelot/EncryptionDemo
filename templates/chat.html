@@ -39,6 +39,7 @@
     </section>
   </main>
   <script>
+    // Check URL param to decide which crypto implementation to use
     const username = "{{ username }}";
     const urlParams = new URLSearchParams(window.location.search);
     const impl = urlParams.get('impl');
@@ -46,8 +47,8 @@
 
     window.onload = () => {
       if (impl === 'webcrypto') {
-        switchLink.textContent = 'Switch to Legacy Crypto';
-        switchLink.href = '?impl=legacy';
+        switchLink.textContent = 'Switch to Manual Crypto';
+        switchLink.href = '?impl=manual';
         document.title += ' (Web Crypto)';
         webCryptoDemoInit(username);
       } else {

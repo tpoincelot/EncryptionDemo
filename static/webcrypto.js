@@ -45,6 +45,7 @@ function sleep(ms) {
 
 // Web Crypto Implementation
 
+// Derive encryption and HMAC keys from shared secret using SHA-256
 async function deriveKeys(secretHex) {
   const secretBytes = hexToBytes(secretHex);
   const hashBuffer = await crypto.subtle.digest('SHA-256', secretBytes);
@@ -65,6 +66,7 @@ async function deriveKeys(secretHex) {
   return { encKey, authKey };
 }
 
+// Encrypt message using Web Crypto API (AES-CBC + HMAC)
 async function encryptWithSecret(secretHex, plaintext) {
   const { encKey, authKey } = await deriveKeys(secretHex);
   const iv = crypto.getRandomValues(new Uint8Array(16));
@@ -96,6 +98,7 @@ async function encryptWithSecret(secretHex, plaintext) {
   };
 }
 
+// Decrypt message using Web Crypto API
 async function decryptWithSecret(secretHex, ivHex, ciphertextHex, hmacHex) {
   const { encKey, authKey } = await deriveKeys(secretHex);
   const iv = hexToBytes(ivHex);
@@ -128,7 +131,8 @@ async function decryptWithSecret(secretHex, ivHex, ciphertextHex, hmacHex) {
   return decoder.decode(ptBuffer);
 }
 
-// Main Init Function (Async-aware)
+// Main Init Function
+// Initialize the chat application with Web Crypto
 async function webCryptoDemoInit(username) {
   const recipientInput = document.getElementById('recipient');
   const initBtn = document.getElementById('init');
@@ -278,6 +282,7 @@ async function webCryptoDemoInit(username) {
     throw new Error('Timed out waiting for peer key to update');
   }
 
+  // Establish a shared secret with a peer
   async function establishSharedSecret(peer, role = 'initiator') {
     if (state.sharedSecrets[peer]) {
       return state.sharedSecrets[peer];
@@ -360,6 +365,7 @@ async function webCryptoDemoInit(username) {
     }
   }
 
+  // Send an encrypted message
   async function sendMessage() {
     const recipient = recipientInput.value.trim();
     const plaintext = messageInput.value.trim();
@@ -399,6 +405,7 @@ async function webCryptoDemoInit(username) {
     refreshInbox();
   }
 
+  // Fetch and display messages
   async function refreshInbox() {
     try {
       const resp = await fetch('/api/messages/' + encodeURIComponent(username));
