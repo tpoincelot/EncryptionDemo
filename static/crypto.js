@@ -1,4 +1,3 @@
-(function() {
 // Super basic DH + XOR-based cipher demo using only Math.random
 const DEMO_P = 100003n;
 const INITIAL_G = 5n;
