@@ -162,6 +162,19 @@ def logout():
 def chat():
     if 'username' not in session:
         return redirect('/')
+
+    # Validate session against database
+    try:
+        conn = get_db()
+        user = conn.execute('SELECT id FROM users WHERE username=?', (session['username'],)).fetchone()
+        conn.close()
+        if not user:
+            session.clear()
+            return redirect('/')
+    except Exception:
+        session.clear()
+        return redirect('/')
+
     return render_template('chat.html', username=session['username'])
 
 # API endpoints for exchanging public keys and messages

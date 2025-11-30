@@ -1,4 +1,4 @@
-# E2E Messaging Demo (Flask)
+# E2EE Messaging Demo (Flask)
 
 ## Overview
 This project is a small Flask application that demonstrates the following cryptographic concepts:
