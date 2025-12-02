@@ -19,6 +19,13 @@
               <label for="recipient">Recipient</label>
               <input id="recipient" placeholder="Enter username">
             </div>
+            <div>
+              <label for="security-mode">Security Mode</label>
+              <select id="security-mode">
+                <option value="demo">Demo (Insecure)</option>
+                <option value="secure">Secure (2048-bit)</option>
+              </select>
+            </div>
             <div style="display:flex;gap:0.5rem;align-items:flex-end;">
               <button id="init" type="button">Init key exchange</button>
               <button id="reset" type="button">Reset shared key</button>

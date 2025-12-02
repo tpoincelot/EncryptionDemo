@@ -25,6 +25,23 @@ logger.addHandler(handler)
 DB_PATH = 'data.db'
 PRIME_OPTIONS = [100003, 100019, 100043, 100049, 100057, 100069, 100103]
 
+# RFC 3526 Group 14 (2048-bit)
+SECURE_PRIME_HEX = """
+FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD1
+29024E088A67CC74020BBEA63B139B22514A08798E3404DD
+EF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245
+E485B576625E7EC6F44C42E9A637ED6B0BFF5CB6F406B7ED
+EE386BFB5A899FA5AE9F24117C4B1FE649286651ECE45B3D
+C2007CB8A163BF0598DA48361C55D39A69163FA8FD24CF5F
+83655D23DCA3AD961C62F356208552BB9ED529077096966D
+670C354E4ABC9804F1746C08CA18217C32905E462E36CE3B
+E39E772C180E86039B2783A2EC07A28FB5C55DF06F4C52C9
+DE2BCBF6955817183995497CEA956AE515D2261898FA0510
+15728E5A8AACAA68FFFFFFFFFFFFFFFF
+""".replace('\n', '').replace(' ', '')
+SECURE_PRIME = int(SECURE_PRIME_HEX, 16)
+SECURE_GENERATOR = 2
+
 def hash_password(password: str) -> str:
     """Very simple SHA-256 hash for demo purposes only (NOT for real security)."""
     return hashlib.sha256(password.encode('utf-8')).hexdigest()
@@ -225,15 +242,24 @@ def create_dh_session():
             return jsonify(success=False, error="Invalid request format"), 400
         initiator = data['initiator']
         recipient = data['recipient']
+        mode = data.get('mode', 'demo')
+
         conn = get_db()
+
         existing = conn.execute('SELECT id, initiator, recipient, p, g FROM dh_sessions WHERE initiator=? AND recipient=? AND status="pending"',
                                 (initiator, recipient)).fetchone()
         if existing:
             conn.close()
             logger.info('existing session returned for %s -> %s', initiator, recipient)
             return jsonify(success=True, session=dict(existing))
-        p = pick_random_prime()
-        g = pick_random_generator(p)
+        
+        if mode == 'secure':
+            p = str(SECURE_PRIME)
+            g = str(SECURE_GENERATOR)
+        else:
+            p = pick_random_prime()
+            g = pick_random_generator(p)
+
         try:
             c = conn.cursor()
             c.execute('INSERT INTO dh_sessions (initiator, recipient, p, g) VALUES (?, ?, ?, ?)',
@@ -251,7 +277,7 @@ def create_dh_session():
             raise
         session = {'id': session_id, 'initiator': initiator, 'recipient': recipient, 'p': p, 'g': g}
         conn.close()
-        logger.info('created DH session %s for %s -> %s (p=%s g=%s)', session_id, initiator, recipient, p, g)
+        logger.info('created DH session %s for %s -> %s (p=%s... g=%s)', session_id, initiator, recipient, p[:10], g)
         return jsonify(success=True, session=session)
     except Exception as e:
         return jsonify(success=False, error=str(e)), 500

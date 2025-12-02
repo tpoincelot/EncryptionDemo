@@ -34,9 +34,22 @@ function modPow(base, exp, mod) {
 }
 
 function randomBigInt(max) {
-  const limit = Number(max - 2n) || 1;
-  const raw = Math.floor(Math.random() * limit) + 2;
-  return BigInt(raw);
+  // Generate a random BigInt in range [2, max-2]
+  if (max < 4n) return 2n;
+  
+  const hexLen = max.toString(16).length;
+  const byteLen = Math.ceil(hexLen / 2);
+  const buffer = new Uint8Array(byteLen);
+  
+  while(true) {
+    window.crypto.getRandomValues(buffer);
+    let hex = '0x' + Array.from(buffer).map(b => b.toString(16).padStart(2, '0')).join('');
+    let val = BigInt(hex);
+    
+    if (val >= 2n && val < max - 1n) {
+      return val;
+    }
+  }
 }
 
 function sleep(ms) {
@@ -176,10 +189,13 @@ async function webCryptoDemoInit(username) {
   }
 
   async function startNewSession(recipient) {
+    const modeSelect = document.getElementById('security-mode');
+    const mode = modeSelect ? modeSelect.value : 'demo';
+
     const resp = await fetch('/api/dh_sessions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ initiator: username, recipient }),
+      body: JSON.stringify({ initiator: username, recipient, mode }),
     });
     const data = await resp.json();
     if (!resp.ok || !data.success || !data.session) {
@@ -322,7 +338,7 @@ async function webCryptoDemoInit(username) {
     state.peerRoles[peer] = role;
     state.lastPeerPublic[peer] = peerData.public_key;
     await logKeyExchange(peer, 'Diffie-Hellman (demo)', params, role);
-    keysDiv.textContent = `Derived DH secret ${secretHex} with ${peer}`;
+    keysDiv.textContent = `Derived DH secret ...${secretHex.slice(-8)} with ${peer}`;
     markSessionComplete();
     return state.sharedSecrets[peer];
   }

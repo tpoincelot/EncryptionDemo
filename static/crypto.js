@@ -11,11 +11,11 @@ function sleep(ms) {
 }
 
 function randomHex(length) {
-  let out = '';
-  while (out.length < length) {
-    out += Math.floor(Math.random() * 16).toString(16);
-  }
-  return out.slice(0, length);
+  const byteLen = Math.ceil(length / 2);
+  const bytes = new Uint8Array(byteLen);
+  window.crypto.getRandomValues(bytes);
+  const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  return hex.slice(0, length);
 }
 
 // Helper function to convert hex string to byte array
@@ -48,9 +48,23 @@ function modPow(base, exp, mod) {
 }
 
 function randomBigInt(max) {
-  const limit = Number(max - 2n) || 1;
-  const raw = Math.floor(Math.random() * limit) + 2;
-  return BigInt(raw);
+  // Generate a random BigInt in range [2, max-2]
+  if (max < 4n) return 2n;
+  
+  // Estimate number of bytes
+  const hexLen = max.toString(16).length;
+  const byteLen = Math.ceil(hexLen / 2);
+  const buffer = new Uint8Array(byteLen);
+  
+  while(true) {
+    window.crypto.getRandomValues(buffer);
+    let hex = '0x' + Array.from(buffer).map(b => b.toString(16).padStart(2, '0')).join('');
+    let val = BigInt(hex);
+    
+    if (val >= 2n && val < max - 1n) {
+      return val;
+    }
+  }
 }
 
 // Simple XOR encryption with key and IV
@@ -79,7 +93,8 @@ function simpleHmac(secretHex, payloadHex) {
 function aesCbcEncrypt(secretHex, plaintext) {
   const blockSize = 16;
   const keyBytes = hexToBytes(secretHex);
-  const ivBytes = new Uint8Array(blockSize).map(() => Math.floor(Math.random() * 256));
+  const ivBytes = new Uint8Array(blockSize);
+  window.crypto.getRandomValues(ivBytes);
   const ptBytes = encoder.encode(plaintext);
 
   const padding = blockSize - (ptBytes.length % blockSize);
@@ -197,10 +212,13 @@ async function cryptoDemoInit(username) {
   }
 
   async function startNewSession(recipient) {
+    const modeSelect = document.getElementById('security-mode');
+    const mode = modeSelect ? modeSelect.value : 'demo';
+
     const resp = await fetch('/api/dh_sessions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ initiator: username, recipient }),
+      body: JSON.stringify({ initiator: username, recipient, mode }),
     });
     const data = await resp.json();
     if (!resp.ok || !data.success || !data.session) {
@@ -343,7 +361,7 @@ async function cryptoDemoInit(username) {
     state.peerRoles[peer] = role;
     state.lastPeerPublic[peer] = peerData.public_key;
     await logKeyExchange(peer, 'Diffie-Hellman (demo)', params, role);
-    keysDiv.textContent = `Derived DH secret ${secretHex} with ${peer}`;
+    keysDiv.textContent = `Derived DH secret ...${secretHex.slice(-8)} with ${peer}`;
     markSessionComplete();
     return state.sharedSecrets[peer];
   }
